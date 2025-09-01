@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "848780192213",
+    "firebase_url": "https://auth-fire1-default-rtdb.firebaseio.com",
+    "project_id": "auth-fire1",
+    "storage_bucket": "auth-fire1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848780192213:android:95c407681bd0d72040f55c",
+        "android_client_info": {
+          "package_name": "com.example.todo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBIi1ZeFId_ULaVwHYHtFdvjx7eI8fSU4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848780192213:android:55a2f6e0173c521040f55c",
+        "android_client_info": {
+          "package_name": "com.example.trackerdesktop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBIi1ZeFId_ULaVwHYHtFdvjx7eI8fSU4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
