@@ -30,6 +30,8 @@
 ---
 
 ## 🚀 Core Functionality
+<img width="428" height="436" alt="Screenshot 2025-09-01 203319" src="https://github.com/user-attachments/assets/545a8331-ed33-43f1-bf60-03283f12dad3" />
+
 
 ### 🌐 **Online Mode**
 <img width="426" height="431" alt="Screenshot 2025-09-01 203357" src="https://github.com/user-attachments/assets/07b38592-9d2e-456c-b1ef-50201d5641f6" />
