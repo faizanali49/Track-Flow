@@ -1,6 +1,3 @@
-Here’s a **clean, polished `README.md`** you can directly use for your GitHub repo:
-
-````md
 # 🕒 TimeTracker Desktop - Work Activity Monitor
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-blue?logo=flutter)](https://flutter.dev)
@@ -69,62 +66,6 @@ Here’s a **clean, polished `README.md`** you can directly use for your GitHub 
 
 ---
 
-### 🧱 Code Highlights
-
-#### **Main App Initialization**
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  await windowManager.setResizable(false);
-  await windowManager.setMaximumSize(const Size(450, 450));
-
-  WindowOptions windowOptions = WindowOptions(
-    size: const Size(450, 450),
-    center: true,
-    fullScreen: false,
-  );
-
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
-  runApp(const RootApp());
-}
-````
-
-#### **Consistent UI Buttons**
-
-```dart
-Widget actionButton({
-  required String label,
-  required Color borderColor,
-  required VoidCallback? onPressed,
-  IconData? icon,
-}) {
-  return Container(
-    width: 150,
-    height: 50,
-    decoration: BoxDecoration(
-      border: Border.all(color: borderColor, width: 2),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: TextButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon ?? Icons.circle, color: borderColor),
-      label: Text(
-        label,
-        style: TextStyle(fontSize: 16, color: borderColor, fontWeight: FontWeight.w500),
-      ),
-    ),
-  );
-}
-```
-
----
 
 ## 📦 Installation & Setup
 
@@ -172,46 +113,3 @@ Widget actionButton({
 5. **Go Offline** — Submit task details and reset timer.
 
 ---
-
-## 🤝 Contributing
-
-Contributions are always welcome!
-
-1. Fork the repository
-2. Create your branch:
-
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
-3. Commit your changes:
-
-   ```bash
-   git commit -m 'Add AmazingFeature'
-   ```
-4. Push to your branch:
-
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
-
----
-
-## 📬 Support
-
-For help, feedback, or feature requests, [open an issue](https://github.com/your-username/timetracker-desktop/issues) or reach out to the maintainers.
-
-> **Note:** This documentation applies to **version 1.0.0**. Check the [Wiki](https://github.com/your-username/timetracker-desktop/wiki) for full API details.
-
-```
-
-Would you like me to make this README **more colorful** with emojis and badges, or keep it minimalist and clean like above?
-```
