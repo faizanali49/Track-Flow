@@ -16,6 +16,14 @@
 **TimeTracker Desktop** is a professional, cross-platform work activity monitoring tool built with **Flutter**. It enables teams and individuals to **track, pause, resume, and log work sessions** with **real-time Firebase integration**, ensuring accuracy and reliable data syncing.
 
 ---
+## Screenshots
+<img width="428" height="436" alt="image" src="https://github.com/user-attachments/assets/ee9a9d50-1c59-43d6-80f9-1fc367f308ca" />
+<img width="1919" height="1030" alt="Screenshot 2025-09-01 163401" src="https://github.com/user-attachments/assets/1fff3690-f523-4e14-a747-83304216df43" />
+<img width="426" height="431" alt="Screenshot 2025-09-01 203357" src="https://github.com/user-attachments/assets/97b3baa1-613e-4103-9039-c2027ab0f573" />
+<img width="435" height="439" alt="Screenshot 2025-09-01 203433" src="https://github.com/user-attachments/assets/c956b9aa![Uploading Screenshot 2025-09-01 203457.png…]()
+-38ed-44b8-9e5d-79b0a17c84f4" />
+
+
 
 ## ✨ Key Features
 
