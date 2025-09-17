@@ -30,24 +30,34 @@
 ---
 
 ## 🚀 Core Functionality
+<img width="428" height="436" alt="Screenshot 2025-09-01 203319" src="https://github.com/user-attachments/assets/545a8331-ed33-43f1-bf60-03283f12dad3" />
+
 
 ### 🌐 **Online Mode**
+<img width="426" height="431" alt="Screenshot 2025-09-01 203357" src="https://github.com/user-attachments/assets/07b38592-9d2e-456c-b1ef-50201d5641f6" />
+
 - User enters a daily work comment.  
 - System records start time in Firebase.  
 - Timer begins tracking session automatically.  
 - Buttons toggle: **Online → Disabled**, **Pause / Offline → Enabled**.
 
-### ⏸ **Pause Mode**
+### ⏸ **Pause Mode** 
+<img width="427" height="443" alt="Screenshot 2025-09-01 203710" src="https://github.com/user-attachments/assets/3ee6a9f9-40f3-4ff1-920e-2b7aa2ee448d" />
+
 - User provides a pause reason.  
 - Firebase logs session status.  
 - Data is saved locally for quick resume.  
 - Buttons toggle: **Pause → Disabled**, **Resume → Enabled**.
 
 ### ▶ **Resume Mode**
+<img width="436" height="438" alt="Screenshot 2025-09-01 203724" src="https://github.com/user-attachments/assets/e2cd6865-65f0-4dc8-8684-a7f03360e15e" />
+
 - **Within 24 hours:** Resume session seamlessly.  
 - **After 24 hours:** Auto-submit session and reset timer.
 
 ### 🔌 **Offline Mode**
+
+<img width="429" height="445" alt="Screenshot 2025-09-01 203457" src="https://github.com/user-attachments/assets/f76fa3e9-f6b6-4d24-a1f7-b26cd587c88a" />
 - User enters task details.  
 - System records total time and clears session data.  
 - UI resets to allow new session tracking.
