@@ -1,22 +1,21 @@
 {
   "project_info": {
-    "project_number": "848780192213",
-    "firebase_url": "https://auth-fire1-default-rtdb.firebaseio.com",
-    "project_id": "auth-fire1",
-    "storage_bucket": "auth-fire1.firebasestorage.app"
+    "project_number": "268379069586",
+    "project_id": "tracker-785f3",
+    "storage_bucket": "tracker-785f3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:848780192213:android:95c407681bd0d72040f55c",
+        "mobilesdk_app_id": "1:268379069586:android:585ce2b48a7ed0e5001a4b",
         "android_client_info": {
-          "package_name": "com.example.todo"
+          "package_name": "com.example.trackerdesktop"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDBIi1ZeFId_ULaVwHYHtFdvjx7eI8fSU4"
+          "current_key": "AIzaSyBhlpdJdEuU-uG_8sZHM_OHJbNNT0ICI6E"
         }
       ],
       "services": {
@@ -27,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:848780192213:android:55a2f6e0173c521040f55c",
+        "mobilesdk_app_id": "1:268379069586:android:ef7a5a108bd3784e001a4b",
         "android_client_info": {
-          "package_name": "com.example.trackerdesktop"
+          "package_name": "com.example.trackermobile"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDBIi1ZeFId_ULaVwHYHtFdvjx7eI8fSU4"
+          "current_key": "AIzaSyBhlpdJdEuU-uG_8sZHM_OHJbNNT0ICI6E"
         }
       ],
       "services": {
