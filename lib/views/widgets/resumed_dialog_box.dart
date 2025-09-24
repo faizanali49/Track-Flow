@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:trackerdesktop/provider/states.dart';
 import 'package:trackerdesktop/services/firebase_service.dart';
 
@@ -15,7 +16,6 @@ int resumeAlert(
     context: context,
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
-      final _username = ref.watch(userNameProvider);
       final stopwatchState = ref.watch(stopwatchProvider);
       final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
 
@@ -41,26 +41,19 @@ int resumeAlert(
 
               // Message
               const Text(
-                'Please press OK to pause or resume the tracker.',
+                'Please press OK to resume your timer and continue working.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.white70),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Action Buttons
+              // Buttons
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
@@ -81,7 +74,9 @@ int resumeAlert(
 
                       ref.read(pausedstatus.notifier).state = false;
 
-                      await _firestoreService.setStatusResumed(_username);
+                      await _firestoreService.setStatus(
+                        status: 'resumed',
+                      );
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -91,7 +86,7 @@ int resumeAlert(
                         ),
                       );
 
-                      Navigator.of(context).pop();
+                      context.pop();
                     },
                     child: const Text('OK'),
                   ),

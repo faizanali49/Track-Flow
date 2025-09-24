@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:trackerdesktop/provider/states.dart';
 import 'package:trackerdesktop/services/firebase_service.dart';
 
 void onlineAlert(
   BuildContext context,
   WidgetRef ref,
-  // String formattedTime,
   bool isOnline,
   stopwatchState,
   stopwatchNotifier,
@@ -17,9 +17,11 @@ void onlineAlert(
     barrierDismissible: false, // Prevent accidental closing
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
-      final String _userId = ref.watch(userNameProvider);
+      // We no longer need to get the userId here as FirestoreService fetches it internally.
+      // final String _userId = ref.watch(userNameProvider);
       final TextEditingController _textFieldController =
           TextEditingController();
+      final logger = Logger();
 
       return StatefulBuilder(
         builder: (BuildContext context, setState) {
@@ -40,113 +42,108 @@ void onlineAlert(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.wifi,
-                        color: Colors.blueAccent,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Go Online',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Subtitle
                   const Text(
-                    'Please enter a task title and press OK to go online.',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Input field
-                  TextField(
-                    controller: _textFieldController,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Enter task title...',
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.blue,
-                          width: 1.5,
-                        ),
-                      ),
+                    'Go Online',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Action buttons
+                  const Text(
+                    'What are you working on?',
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _textFieldController,
+                    maxLines: 2,
+                    maxLength: 30,
+                    decoration: InputDecoration(
+                      labelText: 'e.g., Designing dashboard layout',
+                      labelStyle: const TextStyle(color: Colors.black45),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black26),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueAccent),
+                      ),
+                      suffixIcon: _textFieldController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _textFieldController.clear();
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
                         child: const Text('Cancel'),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isTextEmpty
-                              ? Colors.grey[400]
+                              ? Colors.grey
                               : Colors.blueAccent,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
+                            horizontal: 24,
                             vertical: 12,
                           ),
-                          elevation: 3,
                         ),
                         onPressed: isTextEmpty
                             ? null
                             : () async {
-                                await _firestoreService.setStatusOnline(
-                                  _userId,
-                                  _textFieldController.text.trim(),
-                                );
-                                String formattedTime = DateFormat(
-                                  'h:mm a',
-                                ).format(DateTime.now());
-                                ref.read(onlineTimeProvider.notifier).state =
-                                    formattedTime;
+                                try {
+                                  // The userId is now fetched internally by the FirestoreService,
+                                  // so we remove it from the method call.
+                                  await _firestoreService.setStatus(
+                                    status: 'Online',
+                                    comment: _textFieldController.text,
+                                  );
 
-                                if (!stopwatchState.isRunning) {
-                                  stopwatchNotifier.start();
+                                  // Update states
+                                  ref
+                                      .read(onlineTimeProvider.notifier)
+                                      .state = DateFormat(
+                                    'h:mm:ss a',
+                                  ).format(DateTime.now());
+                                  if (!stopwatchState.isRunning) {
+                                    stopwatchNotifier.start();
+                                  }
+
+                                  ref.read(onlinestatus.notifier).state = true;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Status set to Online'),
+                                    ),
+                                  );
+
+                                  Navigator.of(context).pop();
+                                } catch (e) {
+                                  logger.e("❌ Error in online dialog: $e");
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error setting status: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
                                 }
-
-                                ref.read(onlinestatus.notifier).state = true;
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Status set to Online'),
-                                  ),
-                                );
-
-                                Navigator.of(context).pop();
                               },
                         child: const Text(
                           'OK',

@@ -18,8 +18,8 @@ void offlineAlert(
     barrierDismissible: false, // Prevent accidental close
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
-      // final String _userId = "faizan@scrapbye.com";
-      final _userId = ref.watch(userNameProvider);
+      // We no longer need to get the userId here as FirestoreService fetches it internally.
+      // final _userId = ref.watch(userNameProvider);
       final TextEditingController _titleController = TextEditingController();
       final TextEditingController _descriptionController =
           TextEditingController();
@@ -39,143 +39,131 @@ void offlineAlert(
 
           return Dialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
             ),
+            elevation: 10,
+            backgroundColor: Colors.white,
             child: Container(
-              padding: const EdgeInsets.all(20),
-              width: 400,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+              width: 450,
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.power_settings_new,
-                        color: Colors.redAccent,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Go Offline',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Description
-                  Text(
-                    'Please provide a title and description to proceed offline.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Title Input
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter title...',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
+                  // Title
+                  const Text(
+                    'Go Offline',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Description Input
+                  // title for going offline
+                  TextField(
+                    controller: _titleController,
+                    maxLength: 25,
+                    decoration: InputDecoration(
+                      labelText: 'title for offline',
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black26),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueAccent),
+                      ),
+                      suffixIcon: _titleController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _titleController.clear();
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Description
                   TextField(
                     controller: _descriptionController,
                     maxLines: 3,
+                    maxLength: 60,
                     decoration: InputDecoration(
-                      hintText: 'Enter description...',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                      labelText: 'Description (optional)',
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black26),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueAccent),
                       ),
+                      suffixIcon: _descriptionController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _descriptionController.clear();
+                              },
+                            )
+                          : null,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
-                  // Action Buttons
+                  // Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.grey[600],
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
                         child: const Text('Cancel'),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isTitleEmpty || isDescriptionEmpty
-                              ? Colors.grey[400]
-                              : Colors.blueAccent,
+                          backgroundColor: isTitleEmpty
+                              ? Colors.grey
+                              : Colors.red,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
+                            horizontal: 24,
                             vertical: 12,
                           ),
                         ),
-                        onPressed: (isTitleEmpty || isDescriptionEmpty)
+                        onPressed: isTitleEmpty
                             ? null
                             : () async {
-                                final String title = _titleController.text
-                                    .trim();
-                                final String description =
-                                    _descriptionController.text.trim();
-
-                                await _firestoreService.setStatusOffline(
-                                  total_time.inSeconds,
-                                  _userId,
-                                  title,
-                                  description.isNotEmpty
-                                      ? description
-                                      : 'No description',
-                                );
-
-                                ref.read(onlineTimeProvider.notifier).state =
-                                    formattedTime;
+                                // Pause the timer if it's running
+                                if (stopwatchState.isRunning) {
+                                  stopwatchNotifier.pause();
+                                }
+                                // Stop the time tracking and reset everything
                                 stopwatchNotifier.reset();
-                                ref.read(pausedstatus.notifier).state = false;
                                 ref.read(onlinestatus.notifier).state = false;
 
-                                await _firestoreService
-                                    .getAllStatusHistoryAndSaveToJson(username);
+                                // reset paused status if it was paused
+                                if (isPaused) {
+                                  ref.read(pausedstatus.notifier).state = false;
+                                }
 
+                                // The userId is now fetched internally by the FirestoreService,
+                                // so we remove it from the method call.
+                                await _firestoreService.setStatus(
+                                  status: 'Offline',
+                                  offlineTime: total_time.inMinutes,
+                                  title: _titleController.text,
+                                  description: _descriptionController.text,
+                                );
+
+                                // Clear the SharedPreferences
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 await prefs.remove('pause_reason');

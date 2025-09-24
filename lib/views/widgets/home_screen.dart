@@ -1,5 +1,4 @@
 // lib/views/widgets/right_sidebar.dart
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; // Add this for navigation
@@ -10,10 +9,10 @@ import 'package:trackerdesktop/views/widgets/online_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/paused_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/resumed_dialog_box.dart';
 import 'package:trackerdesktop/provider/theme_check.dart';
-import 'package:trackerdesktop/views/login_authentication/services/web_auth.dart';
+import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
-class RightSidebar extends ConsumerWidget {
-  const RightSidebar({super.key});
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

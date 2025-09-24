@@ -1,135 +1,142 @@
-// lib/services/firestore_service.dart
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logger/logger.dart';
+import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final WindowsAuthService _authService = WindowsAuthService();
+  final logger = Logger();
 
-  Future<void> setStatusOnline(String userId, String onlineComment) async {
-    final currentTime = DateTime.now();
+  /// Get employee email from FirebaseAuth
+  String? get _employeeEmail => _auth.currentUser?.email;
+
+  /// Helper: Get current user ID and company ID from WindowsAuthService
+  Future<Map<String, String?>> _getAuthData() async {
+    final employeeEmail = await _authService.getUserId();
+    final companyId = await _authService.getCompanyEmail();
+
+    if (employeeEmail == null) {
+      logger.e("❌ Error: No employee email id found.");
+    }
+    if (companyId == null) {
+      logger.e("❌ Error: No company email id found.");
+    }
+
+    return {'employeeEmail': employeeEmail, 'companyId': companyId};
+  }
+
+  /// ✅ General-purpose status setter
+  Future<void> setStatus({
+    required String status,
+    String? comment,
+    String? title,
+    String? description,
+    int? offlineTime,
+    DateTime? timestamp,
+  }) async {
+    final authData = await _getAuthData();
+    // final employeeEmail = authData['employeeEmail'];
+    // final employeeEmail = _employeeEmail;
+    final companyId = authData['companyId'];
+    final time = timestamp ?? DateTime.now();
+
+    if (_employeeEmail == null || companyId == null) {
+      logger.e("❌ Cannot update status: Missing auth data.");
+      return;
+    }
 
     try {
-      await _db
-          .collection('employee_status')
-          .doc(userId)
-          .collection('history')
-          .add({
-            'user': userId,
-            'status': 'online',
-            'date': currentTime.toString(),
-            'online_comment': onlineComment,
-          });
-      print("Status updated successfully!");
+      final employeeDoc = _db
+          .collection('companies')
+          .doc(companyId)
+          .collection('employees')
+          .doc(_employeeEmail);
+
+      final activitiesCollection = _db
+          .collection('companies')
+          .doc(companyId)
+          .collection('employees')
+          .doc(_employeeEmail) // log activity under the email
+          .collection('activities');
+
+      // Activity history entry
+      final activityData = {
+        'timestamp': time,
+        'status': status,
+        if (comment != null) 'comment': comment,
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (offlineTime != null) 'spended_time': offlineTime,
+      };
+
+      // Update map for current status
+      final statusUpdateData = {
+        'status': status,
+        if (status == 'online') 'last_online': time,
+        if (status == 'online' && comment != null) 'current_task': comment,
+        if (status == 'paused') ...{
+          'last_paused': time,
+          if (title != null) 'pause_reason': title,
+        },
+        if (status == 'resumed') 'last_resumed': time,
+        if (status == 'offline') ...{
+          'last_offline': time,
+          if (title != null) 'offline_reason': title,
+        },
+      };
+
+      // Write activity log
+      await activitiesCollection.add(activityData);
+
+      // Update current status
+      await employeeDoc.update(statusUpdateData);
+
+      logger.i("✅ Status '$status' updated successfully!");
     } catch (e) {
-      print("Error saving status: $e");
+      logger.e("❌ Error updating status '$status': $e");
     }
   }
 
-  Future<void> setStatusPaused(
-    DateTime pauseTime,
-    String userId,
-    String pausedComment,
-  ) async {
-    try {
-      // Add to activities collection (same as offline)
-      // await _db.collection('users').doc(userId).collection('activities').add({
-      //   'timestamp': pauseTime,
-      //   'action': 'paused',
-      //   'reason': pausedComment,
-      // });
+  Future<void> getAllStatusHistoryAndSaveToJson() async {
+    final authData = await _getAuthData();
+    final employeeEmail = _auth.currentUser?.email;
+    final companyId = authData['companyId'];
 
-      // Update main status document (same as offline)
-      await _db
-          .collection('employee_status')
-          .doc(userId)
-          .collection('history')
-          .add({
-            'status': 'paused',
-            'last_paused': pauseTime,
-            'pause_reason': pausedComment,
-          });
-
-      print("Status updated successfully!");
-    } catch (e) {
-      print("Error saving status: $e");
-      throw e; // Re-throw to be caught by the caller
+    if (employeeEmail == null || companyId == null) {
+      logger.e("❌ Cannot fetch status history: Missing auth data.");
+      return;
     }
-  }
 
-  Future<void> setStatusResumed(String userId) async {
-    final currentTime = DateTime.now();
-
-    try {
-      await _db
-          .collection('employee_status')
-          .doc(userId)
-          .collection('history')
-          .add({'status': 'resumed', 'date': currentTime.toIso8601String()});
-      print("Status resumed updated successfully!");
-    } catch (e) {
-      print("Error saving status: $e");
-    }
-  }
-
-  Future<void> setStatusOffline(
-    int offlineTime,
-    String userId,
-    String reason,
-    String description,
-  ) async {
-    try {
-      await _db
-          .collection('employee_status')
-          .doc(userId)
-          .collection('history')
-          .add({
-            'timestamp': offlineTime,
-            'action': 'offline',
-            'reason': reason,
-            'description': description,
-          });
-
-      // await FirebaseFirestore.instance.collection('users').doc(userId).update({
-      //   'status': 'offline',
-      //   'last_offline': offlineTime,
-      // });
-      print('Status set to offline successfully');
-    } catch (e) {
-      print('Error setting offline status: $e');
-    }
-  }
-
-  Future<void> getAllStatusHistoryAndSaveToJson(String userId) async {
     try {
       final snapshot = await _db
-          .collection('employee_status')
-          .doc(userId)
-          .collection('history')
+          .collection('companies')
+          .doc(companyId)
+          .collection('employees')
+          .doc(employeeEmail)
+          .collection('activities')
+          .orderBy('timestamp', descending: true)
           .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        List<Map<String, dynamic>> statusHistoryList = [];
-
-        // Loop through all documents and extract the data
-        for (var document in snapshot.docs) {
-          statusHistoryList.add(document.data());
-        }
-
-        // Convert the list of status history to JSON
-        String jsonString = jsonEncode(statusHistoryList);
-
-        // Save the JSON data to a file
-        File file = File('status_history_$userId.json');
-        await file.writeAsString(jsonString);
-
-        print('Status history saved to status_history_$userId.json');
-      } else {
-        print('No status history found for user: $userId');
+      if (snapshot.docs.isEmpty) {
+        logger.i("ℹ️ No status history found for user: $employeeEmail");
+        return;
       }
+
+      final historyList = snapshot.docs.map((doc) => doc.data()).toList();
+      final jsonString = jsonEncode(historyList);
+
+      final file = File('status_history_$employeeEmail.json');
+      await file.writeAsString(jsonString);
+
+      logger.i(
+        "✅ Status history exported to status_history_$employeeEmail.json",
+      );
     } catch (e) {
-      print("Error fetching status history: $e");
+      logger.e("❌ Error exporting status history: $e");
     }
   }
 }

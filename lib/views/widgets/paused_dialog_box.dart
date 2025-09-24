@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackerdesktop/provider/states.dart';
 import 'package:trackerdesktop/services/firebase_service.dart';
@@ -21,7 +23,9 @@ void pausedAlert(
       final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
       final TextEditingController _textFieldController =
           TextEditingController();
-      final username = ref.watch(userNameProvider);
+      final logger = Logger();
+      // We no longer need to get the username here as FirestoreService fetches it internally.
+      // final username = ref.watch(userNameProvider);
 
       return StatefulBuilder(
         builder: (context, setState) {
@@ -42,130 +46,110 @@ void pausedAlert(
               width: 400,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Text(
-                    'Do you want to proceed?',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  const Text(
+                    'Pause Task',
+                    style: TextStyle(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 10),
-
-                  // Subtitle
-                  Text(
-                    'Please enter reason and press OK to Pause the tracker.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-                  ),
                   const SizedBox(height: 20),
-
-                  // Input Field
+                  const Text(
+                    'Why are you pausing?',
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _textFieldController,
+                    maxLines: 2,
+                    maxLength: 30,
                     decoration: InputDecoration(
-                      hintText: 'Enter reason',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                      labelText: 'e.g., Quick break, meeting, etc.',
+                      labelStyle: const TextStyle(color: Colors.black45),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black26),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueAccent),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: const BorderSide(color: Colors.blueAccent),
-                      ),
+                      suffixIcon: _textFieldController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _textFieldController.clear();
+                              },
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Action Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Cancel
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.grey[700],
-                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
                         child: const Text('Cancel'),
                       ),
-
-                      const SizedBox(width: 10),
-
-                      // OK
+                      const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: isTextEmpty
-                            ? null
-                            : () async {
-                                final wasRunning = stopwatchState.isRunning;
+                        onPressed: () async {
+                          final bool wasRunning = stopwatchState.isRunning;
+                          stopwatchNotifier.pause();
+                          ref.read(pausedstatus.notifier).state = true;
+                          try {
+                            // The username is now fetched internally by the FirestoreService,
+                            // so we remove it from the method call.
+                            await _firestoreService.setStatus(
+                              status: 'paused',
+                              timestamp: DateTime.now(),
+                              title: _textFieldController.text,
+                            );
 
-                                try {
-                                  stopwatchNotifier.pause();
-                                  DateTime pauseTime = DateTime.now();
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString(
+                              'pause_reason',
+                              _textFieldController.text,
+                            );
+                            await prefs.setBool('is_paused', true);
+                            await prefs.setString(
+                              'pause_date',
+                              DateTime.now().toString(),
+                            );
+                            await prefs.setInt(
+                              'elapsed_time',
+                              stopwatchState.elapsed.inSeconds,
+                            );
 
-                                  await _firestoreService.setStatusPaused(
-                                    pauseTime,
-                                    username,
-                                    _textFieldController.text.trim(),
-                                  );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Status set to Paused'),
+                              ),
+                            );
+                          } catch (e) {
+                            logger.e("❌ Error in paused dialog: $e");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Error pausing timer. Please try again.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
 
-                                  ref.read(pausedstatus.notifier).state = true;
+                            if (wasRunning) {
+                              stopwatchNotifier.start();
+                              ref.read(pausedstatus.notifier).state = false;
+                            }
+                          }
 
-                                  final prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString(
-                                    'pause_date',
-                                    pauseTime.toIso8601String(),
-                                  );
-                                  await prefs.setString(
-                                    'pause_reason',
-                                    _textFieldController.text.trim(),
-                                  );
-                                  await prefs.setBool('is_paused', true);
-                                  await prefs.setBool('was_running', false);
-                                  await prefs.setBool('was_paused', true);
-                                  await prefs.setString(
-                                    'elapsed_time',
-                                    stopwatchState.elapsed.inMilliseconds
-                                        .toString(),
-                                  );
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Timer paused successfully',
-                                      ),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Error pausing timer. Please try again.',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-
-                                  if (wasRunning) {
-                                    stopwatchNotifier.start();
-                                    ref.read(pausedstatus.notifier).state =
-                                        false;
-                                  }
-                                }
-
-                                Navigator.of(context).pop();
-                              },
+                          context.pop();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
                           foregroundColor: Colors.white,

@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import 'package:trackerdesktop/router/routing.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:trackerdesktop/services/firebase_options.dart';
+import 'package:trackerdesktop/firebase_options.dart';
 
 // GoRouter configuration
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  final logger = Logger();
 
   try {
+    // Make sure this uses the correct options file for TrackerApp
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+
+    // Add this to verify which project you're connected to
+    logger.i(
+      'Firebase initialized with project: ${DefaultFirebaseOptions.currentPlatform.projectId}',
+    );
   } catch (e) {
-    print('Firebase initialization error: $e');
+    logger.e("❌ Firebase initialization error: $e");
   }
 
   await windowManager.setResizable(false);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackerdesktop/services/firebase_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Handles application lifecycle events to manage timer state
@@ -33,6 +34,7 @@ class AppLifecycleHandler with WidgetsBindingObserver, WindowListener {
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       _saveCurrentState();
+      // send paused event to firebase
     }
   }
 
@@ -43,6 +45,10 @@ class AppLifecycleHandler with WidgetsBindingObserver, WindowListener {
 
   void _saveCurrentState() async {
     final prefs = await SharedPreferences.getInstance();
+    final employeeEmail = prefs.getString('employee_email');
+    if (employeeEmail == null || employeeEmail.isEmpty) {
+      return;
+    }
     final currentTime = getCurrentTime();
     final running = isRunning();
     final online = isOnline();
@@ -52,9 +58,19 @@ class AppLifecycleHandler with WidgetsBindingObserver, WindowListener {
     await prefs.setBool('was_running', running);
     await prefs.setBool('was_online', online);
     await prefs.setBool('was_paused', paused);
+    await prefs.setString('employee_email', employeeEmail);
 
     // Save current date for inactivity checks
     await prefs.setString('pause_date', DateTime.now().toString());
+
+    // send status to firebase if app is closed or unfocused
+    final firestoreService = FirestoreService();
+
+    await firestoreService.setStatus(
+      status: 'Paused',
+      timestamp: DateTime.now(),
+      title: "App lost focus - saving state",
+    );
 
     // Save current timestamp for when we'll need to show the start time
     if (online) {

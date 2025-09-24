@@ -40,7 +40,7 @@ class StopwatchNotifier extends StateNotifier<StopwatchState> {
   Timer? _timer;
   DateTime? _lastTick;
 
-  /// Starts the stopwatch.
+  // Starts the stopwatch.
   void start() {
     if (state.isRunning) return;
     state = state.copyWith(isRunning: true);
@@ -53,19 +53,19 @@ class StopwatchNotifier extends StateNotifier<StopwatchState> {
     });
   }
 
-  /// Pauses the stopwatch.
+  // Pauses the stopwatch.
   void pause() {
     _timer?.cancel();
     state = state.copyWith(isRunning: false);
   }
 
-  /// Resets the stopwatch.
+  // Resets the stopwatch.
   void reset() {
     _timer?.cancel();
     state = const StopwatchState(elapsed: Duration.zero, isRunning: false);
   }
 
-  /// Sets the elapsed time to a specific duration.
+  // Sets the elapsed time to a specific duration.
   void setTime(Duration duration) {
     state = state.copyWith(elapsed: duration);
   }

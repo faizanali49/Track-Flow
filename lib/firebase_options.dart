@@ -41,48 +41,52 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U',
-    appId: '1:268379069586:web:0ed6720d078466ff001a4b',
-    messagingSenderId: '268379069586',
-    projectId: 'tracker-785f3',
-    authDomain: 'tracker-785f3.firebaseapp.com',
-    storageBucket: 'tracker-785f3.firebasestorage.app',
-    measurementId: 'G-MM731337B6',
+    apiKey: "AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U",
+    authDomain: "tracker-785f3.firebaseapp.com",
+    projectId: "tracker-785f3",
+    storageBucket: "tracker-785f3.firebasestorage.app",
+    messagingSenderId: "268379069586",
+    appId: "1:268379069586:web:0ed6720d078466ff001a4b",
+    measurementId: "G-MM731337B6",
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBhlpdJdEuU-uG_8sZHM_OHJbNNT0ICI6E',
-    appId: '1:268379069586:android:585ce2b48a7ed0e5001a4b',
-    messagingSenderId: '268379069586',
-    projectId: 'tracker-785f3',
-    storageBucket: 'tracker-785f3.firebasestorage.app',
+    apiKey: "AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U",
+    authDomain: "tracker-785f3.firebaseapp.com",
+    projectId: "tracker-785f3",
+    storageBucket: "tracker-785f3.firebasestorage.app",
+    messagingSenderId: "268379069586",
+    appId: "1:268379069586:web:0ed6720d078466ff001a4b",
+    measurementId: "G-MM731337B6",
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDrdXI-VWDnXaPriTvKIOoVcDCLeMMqAd4',
-    appId: '1:268379069586:ios:5ddf7f1f69dbdba3001a4b',
-    messagingSenderId: '268379069586',
-    projectId: 'tracker-785f3',
-    storageBucket: 'tracker-785f3.firebasestorage.app',
-    iosBundleId: 'com.example.trackerdesktop',
+    apiKey: "AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U",
+    authDomain: "tracker-785f3.firebaseapp.com",
+    projectId: "tracker-785f3",
+    storageBucket: "tracker-785f3.firebasestorage.app",
+    messagingSenderId: "268379069586",
+    appId: "1:268379069586:web:0ed6720d078466ff001a4b",
+    measurementId: "G-MM731337B6",
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDrdXI-VWDnXaPriTvKIOoVcDCLeMMqAd4',
-    appId: '1:268379069586:ios:5ddf7f1f69dbdba3001a4b',
-    messagingSenderId: '268379069586',
-    projectId: 'tracker-785f3',
-    storageBucket: 'tracker-785f3.firebasestorage.app',
-    iosBundleId: 'com.example.trackerdesktop',
+    apiKey: "AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U",
+    authDomain: "tracker-785f3.firebaseapp.com",
+    projectId: "tracker-785f3",
+    storageBucket: "tracker-785f3.firebasestorage.app",
+    messagingSenderId: "268379069586",
+    appId: "1:268379069586:web:0ed6720d078466ff001a4b",
+    measurementId: "G-MM731337B6",
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U',
-    appId: '1:268379069586:web:0ed6720d078466ff001a4b',
-    messagingSenderId: '268379069586',
-    projectId: 'tracker-785f3',
-    authDomain: 'tracker-785f3.firebaseapp.com',
-    storageBucket: 'tracker-785f3.firebasestorage.app',
-    measurementId: 'G-MM731337B6',
+    apiKey: "AIzaSyCczhiti7hwlHqwPH7eYhR5F5kgkuj4P-U",
+    authDomain: "tracker-785f3.firebaseapp.com",
+    projectId: "tracker-785f3",
+    storageBucket: "tracker-785f3.firebasestorage.app",
+    messagingSenderId: "268379069586",
+    appId: "1:268379069586:web:0ed6720d078466ff001a4b",
+    measurementId: "G-MM731337B6",
   );
 }

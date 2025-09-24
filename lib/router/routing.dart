@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackerdesktop/views/login_authentication/login_view.dart';
-import 'package:trackerdesktop/views/widgets/right_sidebar.dart';
+import 'package:trackerdesktop/views/widgets/home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:trackerdesktop/views/login_authentication/services/web_auth.dart';
+import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Set up a listener for auth state
@@ -26,8 +26,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (context, state) => '/login'),
       GoRoute(path: '/login', builder: (context, state) => const LoginView()),
       GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => const RightSidebar(),
+        path: '/home',
+        builder: (context, state) => const HomeScreen(),
       ),
     ],
     redirect: (context, state) async {
@@ -40,7 +40,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && isGoingToLogin) {
-        return '/dashboard';
+        return '/home';
       }
 
       return null;
