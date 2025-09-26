@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackerdesktop/provider/states.dart';
 import 'package:trackerdesktop/services/firebase_service.dart';
+import 'package:trackerdesktop/views/widgets/paused_logic.dart';
 
 void pausedAlert(
   BuildContext context,
@@ -102,52 +103,17 @@ void pausedAlert(
                           final bool wasRunning = stopwatchState.isRunning;
                           stopwatchNotifier.pause();
                           ref.read(pausedstatus.notifier).state = true;
-                          try {
-                            // The username is now fetched internally by the FirestoreService,
-                            // so we remove it from the method call.
-                            await _firestoreService.setStatus(
-                              status: 'paused',
-                              timestamp: DateTime.now(),
-                              title: _textFieldController.text,
-                            );
-
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString(
-                              'pause_reason',
-                              _textFieldController.text,
-                            );
-                            await prefs.setBool('is_paused', true);
-                            await prefs.setString(
-                              'pause_date',
-                              DateTime.now().toString(),
-                            );
-                            await prefs.setInt(
-                              'elapsed_time',
-                              stopwatchState.elapsed.inSeconds,
-                            );
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Status set to Paused'),
-                              ),
-                            );
-                          } catch (e) {
-                            logger.e("❌ Error in paused dialog: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Error pausing timer. Please try again.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-
-                            if (wasRunning) {
-                              stopwatchNotifier.start();
-                              ref.read(pausedstatus.notifier).state = false;
-                            }
+                          final result = await pausedStatus(
+                            _textFieldController.text,
+                            stopwatchState,
+                            context,
+                            wasRunning,
+                            stopwatchNotifier,
+                            ref,
+                          );
+                          if (result != 'success') {
+                            logger.e("❌ Failed to pause status.");
                           }
-
                           context.pop();
                         },
                         style: ElevatedButton.styleFrom(

@@ -1,105 +1,117 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trackerdesktop/services/firebase_service.dart';
-import 'package:trackerdesktop/provider/states.dart';
-import 'package:intl/intl.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:trackerdesktop/provider/employee_profile_provider.dart';
+// import 'package:trackerdesktop/services/firebase_service.dart';
+// import 'package:trackerdesktop/provider/states.dart';
+// import 'package:intl/intl.dart';
 
-class AppStateManager {
-  static const int maxInactiveHours = 16;
+// class AppStateManager {
+//   static const int maxInactiveHours = 16;
 
-  // Restore app state on startup
-  static Future<void> restoreAppState(WidgetRef ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    final firestoreService = FirestoreService();
-    final userId = ref.watch(userNameProvider);
-    if (userId! == null || userId.isEmpty) {
-      return;
-    }
+//   static Future<void> restoreAppState(WidgetRef ref) async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final firestoreService = FirestoreService();
+//     final userId = ref.watch(employeeEmailProvider); // employee email
+//     final companyId = ref.watch(companyEmailProviderID); // company email
 
-    // Check if too much time has elapsed
-    final autoOffline = await shouldAutoSetOffline();
+//     if (userId == null ||
+//         userId.isEmpty ||
+//         companyId == null ||
+//         companyId.isEmpty) {
+//       return;
+//     }
 
-    if (autoOffline) {
-      // More than 16 hours have passed - set user to offline
-      // The userId is now fetched internally by the FirestoreService,
-      // so we remove it from the method call.
-      await firestoreService.setStatus(
-        status: 'Offline',
-        offlineTime: DateTime.now().second,
-        title: "Automatic offline after 16+ hours of inactivity",
-      );
+//     // Retrieve stored user info
+//     final savedEmployeeEmail = prefs.getString('employee_email');
+//     final savedCompanyEmail = prefs.getString('company_email');
 
-      // Reset all states
-      ref.read(onlinestatus.notifier).state = false;
-      ref.read(pausedstatus.notifier).state = false;
-      ref.read(onlineTimeProvider.notifier).state = null;
-      ref.read(stopwatchProvider.notifier).reset();
+//     // ✅ Check if stored emails match the current logged-in user
+//     if (savedEmployeeEmail != userId || savedCompanyEmail != companyId) {
+//       // Different user → clear old data to avoid mixing states
+//       await prefs.clear();
+//       ref.read(onlinestatus.notifier).state = false;
+//       ref.read(pausedstatus.notifier).state = false;
+//       ref.read(onlineTimeProvider.notifier).state = null;
+//       ref.read(stopwatchProvider.notifier).reset();
+//       return;
+//     }
 
-      // Clear stored pause state
-      await prefs.remove('pause_date');
-      await prefs.remove('start_time');
-      await prefs.remove('elapsed_time');
-      await prefs.remove('is_online');
-      await prefs.remove('is_paused');
-    } else {
-      // Restore the state based on what was saved
-      final wasOnline = prefs.getBool('is_online') ?? false;
-      final wasPaused = prefs.getBool('is_paused') ?? false;
-      final seconds = prefs.getInt('elapsed_time') ?? 0;
-      final onlineStartTime = prefs.getString('start_time');
-      final employeeEmail = prefs.getString('employee_email');
+//     // Check if too much time has elapsed (auto offline)
+//     final autoOffline = await shouldAutoSetOffline();
 
-      // Update state providers
-      if (onlineStartTime != null) {
-        ref.read(onlineTimeProvider.notifier).state =
-            DateFormat('h:mm:ss a').format(DateTime.parse(onlineStartTime));
-      }
-      ref.read(onlinestatus.notifier).state = wasOnline;
-      ref.read(pausedstatus.notifier).state = wasPaused;
+//     if (autoOffline) {
+//       await firestoreService.setStatus(
+//         status: 'Offline',
+//         offlineTime: DateTime.now().second,
+//         title: "Automatic offline after 16+ hours of inactivity",
+//       );
 
-      final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
-      if (seconds > 0) {
-        // Set the elapsed time
-        final elapsed = Duration(seconds: seconds);
-        stopwatchNotifier.setTime(elapsed);
+//       // Reset states
+//       ref.read(onlinestatus.notifier).state = false;
+//       ref.read(pausedstatus.notifier).state = false;
+//       ref.read(onlineTimeProvider.notifier).state = null;
+//       ref.read(stopwatchProvider.notifier).reset();
 
-        // Start the timer if needed (user was online and not paused)
-        if (wasOnline && !wasPaused) {
-          stopwatchNotifier.start();
-        }
-      }
+//       await prefs.remove('pause_date');
+//       await prefs.remove('start_time');
+//       await prefs.remove('elapsed_time');
+//       await prefs.remove('is_online');
+//       await prefs.remove('is_paused');
+//     } else {
+//       // Restore from saved state
+//       final wasOnline = prefs.getBool('is_online') ?? false;
+//       final wasPaused = prefs.getBool('is_paused') ?? false;
+//       final seconds = prefs.getInt('elapsed_time') ?? 0;
+//       final onlineStartTime = prefs.getString('start_time');
 
-      // If user was online but paused, just restore the UI state
-      if (wasOnline && wasPaused) {
-        // Don't start the timer, but make sure UI shows paused state
-        ref.read(pausedstatus.notifier).state = true;
-      }
-    }
-  }
+//       if (onlineStartTime != null) {
+//         ref.read(onlineTimeProvider.notifier).state = DateFormat(
+//           'h:mm:ss a',
+//         ).format(DateTime.parse(onlineStartTime));
+//       }
 
-  // Check if user should be automatically set to offline
-  static Future<bool> shouldAutoSetOffline() async {
-    final prefs = await SharedPreferences.getInstance();
-    final pauseDateStr = prefs.getString('pause_date');
+//       ref.read(onlinestatus.notifier).state = wasOnline;
+//       ref.read(pausedstatus.notifier).state = wasPaused;
 
-    // If no pause date saved, check the last activity time
-    if (pauseDateStr == null) {
-      final lastActiveStr = prefs.getString('start_time');
-      if (lastActiveStr == null) {
-        return false;
-      }
+//       final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
+//       if (seconds > 0) {
+//         final elapsed = Duration(seconds: seconds);
+//         stopwatchNotifier.setTime(elapsed);
 
-      final lastActive = DateTime.parse(lastActiveStr);
-      final now = DateTime.now();
-      final difference = now.difference(lastActive);
+//         if (wasOnline && !wasPaused) {
+//           stopwatchNotifier.start();
+//         }
+//       }
 
-      return difference.inHours > maxInactiveHours;
-    }
+//       if (wasOnline && wasPaused) {
+//         ref.read(pausedstatus.notifier).state = true;
+//       }
+//     }
+//   }
 
-    final pauseDate = DateTime.parse(pauseDateStr);
-    final now = DateTime.now();
-    final difference = now.difference(pauseDate);
+//   // Check if user should be automatically set to offline
+//   static Future<bool> shouldAutoSetOffline() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final pauseDateStr = prefs.getString('pause_date');
 
-    return difference.inHours > maxInactiveHours;
-  }
-}
+//     // If no pause date saved, check the last activity time
+//     if (pauseDateStr == null) {
+//       final lastActiveStr = prefs.getString('start_time');
+//       if (lastActiveStr == null) {
+//         return false;
+//       }
+
+//       final lastActive = DateTime.parse(lastActiveStr);
+//       final now = DateTime.now();
+//       final difference = now.difference(lastActive);
+
+//       return difference.inHours > maxInactiveHours;
+//     }
+
+//     final pauseDate = DateTime.parse(pauseDateStr);
+//     final now = DateTime.now();
+//     final difference = now.difference(pauseDate);
+
+//     return difference.inHours > maxInactiveHours;
+//   }
+// }

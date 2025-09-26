@@ -1,7 +1,9 @@
 // lib/services/windows_auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackerdesktop/provider/states.dart' as AppStateManager;
 
 class WindowsAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,9 +22,10 @@ class WindowsAuthService {
     required String companyEmail,
     required String employeeEmail,
     required String password,
+    required WidgetRef ref, // <-- add this so we can restore state
   }) async {
     try {
-      // Step 1: Authenticate the user with Firebase using employee credentials.
+      // 🔑 Authenticate with Firebase
       final credential = await _auth.signInWithEmailAndPassword(
         email: employeeEmail,
         password: password,
@@ -36,23 +39,11 @@ class WindowsAuthService {
         );
       }
 
-      // Ensure emails match the authenticated user
-      if (user.email?.toLowerCase() != employeeEmail.toLowerCase()) {
-        // This is a safeguard, though Firebase Auth should handle this.
-        await _auth.signOut();
-        throw FirebaseAuthException(
-          code: 'email-mismatch',
-          message:
-              'Authenticated email does not match provided employee email.',
-        );
-      }
-
-      // Step 2: Check if the provided company email exists in the database.
+      // 🔑 Validate company + employee exist in Firestore
       final companyDoc = await _firestore
           .collection('companies')
           .doc(companyEmail.toLowerCase())
           .get();
-
       if (!companyDoc.exists) {
         await _auth.signOut();
         throw FirebaseAuthException(
@@ -61,18 +52,12 @@ class WindowsAuthService {
         );
       }
 
-      // Optional: Get company name for storage
-      final String companyName =
-          companyDoc.data()?['company'] as String? ?? 'Unknown Company';
-
-      // Step 3: Check if the authenticated employee email exists within the company's sub-collection.
       final employeeDoc = await _firestore
           .collection('companies')
           .doc(companyEmail.toLowerCase())
           .collection('employees')
           .doc(employeeEmail.toLowerCase())
           .get();
-
       if (!employeeDoc.exists) {
         await _auth.signOut();
         throw FirebaseAuthException(
@@ -81,31 +66,28 @@ class WindowsAuthService {
         );
       }
 
-      // --- Efficiently Store Session Info ---
-      // Get SharedPreferences instance
+      // 🔑 Store session in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-
-      // Store the necessary information
       await prefs.setString(_prefsKeyUserId, user.uid);
       await prefs.setString(_prefsKeyCompanyEmail, companyEmail.toLowerCase());
       await prefs.setString(
         _prefsKeyEmployeeEmail,
         employeeEmail.toLowerCase(),
-      ); // Store employee email
+      );
       await prefs.setString(
         _prefsKeyCompanyName,
-        companyName,
-      ); // Optional: store company name
+        companyDoc.data()?['company'] as String? ?? 'Unknown Company',
+      );
+
+      // 🔥 Restore previous app state (stopwatch, pause, online)
+      await AppStateManager.restoreAppState(ref);
 
       print(
         'Native employee login successful for ${user.email} under company $companyEmail',
       );
     } on FirebaseAuthException {
-      // Re-throw specific Firebase Auth exceptions to be handled by the UI
       rethrow;
     } catch (e) {
-      // Catch any other exceptions, ensure sign out, and throw a generic error
-      // Check if user was signed in before attempting sign out
       if (_auth.currentUser != null) {
         await _auth.signOut();
       }

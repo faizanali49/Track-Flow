@@ -39,8 +39,6 @@ class FirestoreService {
     DateTime? timestamp,
   }) async {
     final authData = await _getAuthData();
-    // final employeeEmail = authData['employeeEmail'];
-    // final employeeEmail = _employeeEmail;
     final companyId = authData['companyId'];
     final time = timestamp ?? DateTime.now();
 

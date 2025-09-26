@@ -19,11 +19,11 @@ void offlineAlert(
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
       // We no longer need to get the userId here as FirestoreService fetches it internally.
-      // final _userId = ref.watch(userNameProvider);
+      // final _userId = ref.watch(employeeEmailProvider);
       final TextEditingController _titleController = TextEditingController();
       final TextEditingController _descriptionController =
           TextEditingController();
-      String username = ref.watch(userNameProvider);
+      String username = ref.watch(employeeEmailProvider)!;
       final onlineTime = ref.watch(onlineTimeProvider);
 
       return StatefulBuilder(

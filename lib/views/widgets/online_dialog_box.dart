@@ -120,7 +120,7 @@ void onlineAlert(
                                   ref
                                       .read(onlineTimeProvider.notifier)
                                       .state = DateFormat(
-                                    'h:mm:ss a',
+                                    'h:mm a',
                                   ).format(DateTime.now());
                                   if (!stopwatchState.isRunning) {
                                     stopwatchNotifier.start();

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:trackerdesktop/provider/employee_profile_provider.dart';
+import 'package:trackerdesktop/provider/states.dart';
 import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
 class LoginView extends ConsumerStatefulWidget {
@@ -56,8 +58,14 @@ class _EmployeeLoginScreenState extends ConsumerState<LoginView> {
         companyEmail: _companyEmailController.text.trim(),
         employeeEmail: _employeeEmailController.text.trim(),
         password: _passwordController.text.trim(),
+        ref: ref, // <-- so restoreAppState runs
       );
+
       if (mounted) {
+        ref.read(employeeEmailProviderID.notifier).state =
+            _employeeEmailController.text.trim();
+        ref.read(companyEmailProviderID.notifier).state =
+            _companyEmailController.text.trim();
         context.go('/home');
       }
     } on FirebaseAuthException catch (e) {

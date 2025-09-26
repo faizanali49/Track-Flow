@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackerdesktop/provider/employee_profile_provider.dart';
 import 'package:trackerdesktop/services/app_lifecycle_handler.dart';
 import 'package:trackerdesktop/provider/states.dart';
 
@@ -20,21 +21,22 @@ class StopwatchState {
 
 class StopwatchNotifier extends StateNotifier<StopwatchState> {
   final Ref ref;
-  late AppLifecycleHandler lifecycleHandler;
+  // late AppLifecycleHandler lifecycleHandler;
 
   StopwatchNotifier(this.ref)
     : super(const StopwatchState(elapsed: Duration.zero, isRunning: false)) {
     _timer = null;
 
     // Create and initialize lifecycle handler
-    lifecycleHandler = AppLifecycleHandler(
-      getCurrentTime: () => state.elapsed,
-      isRunning: () => state.isRunning,
-      isOnline: () => ref.read(onlinestatus),
-      isPaused: () => ref.read(pausedstatus),
-    );
+    // lifecycleHandler = AppLifecycleHandler(
+    //   getCurrentTime: () => state.elapsed,
+    //   isRunning: () => state.isRunning,
+    //   isOnline: () => ref.read(onlinestatus),
+    //   isPaused: () => ref.read(pausedstatus),
+    //   companyEmail: ref.read(companyEmailProviderID),
+    // );
 
-    lifecycleHandler.init();
+    // lifecycleHandler.init();
   }
 
   Timer? _timer;
@@ -73,7 +75,7 @@ class StopwatchNotifier extends StateNotifier<StopwatchState> {
   @override
   void dispose() {
     _timer?.cancel();
-    lifecycleHandler.dispose();
+    // lifecycleHandler.dispose();
     super.dispose();
   }
 }

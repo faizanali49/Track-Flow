@@ -5,8 +5,9 @@ import 'package:trackerdesktop/provider/stopwatch_provider.dart';
 // Existing providers
 final onlinestatus = StateProvider<bool>((ref) => false);
 final pausedstatus = StateProvider<bool>((ref) => false);
-final userNameProvider = StateProvider<String>((ref) => 'Faizan');
+// final userNameProvider = StateProvider<String?>((ref) => null);
 final onlineTimeProvider = StateProvider<String?>((ref) => null);
+final employeeEmailProvider = StateProvider<String?>((ref) => null);
 
 // New function to restore app state
 Future<void> restoreAppState(WidgetRef ref) async {

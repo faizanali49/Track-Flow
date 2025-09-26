@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; // Add this for navigation
 import 'package:intl/intl.dart';
+import 'package:trackerdesktop/provider/employee_profile_provider.dart';
 import 'package:trackerdesktop/provider/states.dart';
+import 'package:trackerdesktop/theme/colors.dart';
 import 'package:trackerdesktop/views/widgets/offline_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/online_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/paused_dialog_box.dart';
@@ -22,7 +24,8 @@ class HomeScreen extends ConsumerWidget {
     final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
     final isOnline = ref.watch(onlinestatus);
     final isPaused = ref.watch(pausedstatus);
-    final username = ref.watch(userNameProvider);
+    final useremail = ref.watch(employeeEmailProvider);
+    final profile = ref.watch(employeeProfileProvider);
 
     // Check if user is authenticated using WebAuthService
     WindowsAuthService().isAuthenticated().then((isAuthenticated) {
@@ -36,8 +39,8 @@ class HomeScreen extends ConsumerWidget {
 
     // Use the stored email for username if available
     WindowsAuthService().getUserEmail().then((email) {
-      if (email != null && ref.read(userNameProvider) != email) {
-        ref.read(userNameProvider.notifier).state = email;
+      if (email != null && ref.read(employeeEmailProvider) != email) {
+        ref.read(employeeEmailProvider.notifier).state = email;
       }
     });
 
@@ -114,168 +117,211 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[850] : Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: profile.when(
+        data: (profile) {
+          if (profile == null) {
+            return const Center(
+              child: Text(
+                'No profile data available.',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
               children: [
-                Image.asset(
-                  isDarkMode
-                      ? 'assets/images/scrapy-white.png'
-                      : 'assets/images/scrape.png',
-                  height: 50,
-                ),
+                // Header Row
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const CircleAvatar(
-                      backgroundImage: AssetImage('assets/images/circler.jpg'),
-                      radius: 20,
+                    Image.asset(
+                      isDarkMode
+                          ? 'assets/images/scrapy-white.png'
+                          : 'assets/images/scrape.png',
+                      height: 50,
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      username,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                        fontWeight: FontWeight.w500,
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: NetworkImage(profile.avatarUrl),
+                          radius: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              profile.name,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              useremail ?? 'Guest',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              profile.role,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 10),
+                        // Logout button with direct Firebase signout
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.red),
+                          onPressed: () async {
+                            await WindowsAuthService().signOut();
+                            if (context.mounted) {
+                              context.go('/login');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black26, width: 1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Start Time",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            onlineTime == null
+                                ? '--:--:--'
+                                : onlineTime.toString(),
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            "Spend Time",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          displayTimer(),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    // Logout button with direct Firebase signout
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: () async {
-                        await WindowsAuthService().signOut();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      },
+
+                    const SizedBox(height: 20),
+                    Column(
+                      children: [
+                        actionButton(
+                          label: "Online",
+                          borderColor: isOnline ? Colors.green : Colors.grey,
+                          icon: Icons.wifi,
+                          onPressed: isOnline
+                              ? null
+                              : () {
+                                  onlineAlert(
+                                    context,
+                                    ref,
+                                    isOnline,
+                                    stopwatchState,
+                                    stopwatchNotifier,
+                                  );
+                                },
+                        ),
+                        const SizedBox(height: 20),
+                        actionButton(
+                          label: isPaused ? "Resume" : "Pause",
+                          borderColor: Colors.orange,
+                          icon: isPaused ? Icons.play_arrow : Icons.pause,
+                          onPressed: isOnline
+                              ? () {
+                                  isPaused
+                                      ? resumeAlert(
+                                          context,
+                                          ref,
+                                          formattedTime,
+                                          isOnline,
+                                          stopwatchState,
+                                          stopwatchNotifier,
+                                        )
+                                      : pausedAlert(
+                                          context,
+                                          ref,
+                                          formattedTime,
+                                          isOnline,
+                                          stopwatchState,
+                                          stopwatchNotifier,
+                                        );
+                                }
+                              : null,
+                        ),
+                        const SizedBox(height: 20),
+                        actionButton(
+                          label: "Offline",
+                          borderColor: isOnline ? Colors.red : Colors.grey,
+                          icon: Icons.power_settings_new,
+                          onPressed: isOnline
+                              ? () {
+                                  offlineAlert(
+                                    context,
+                                    ref,
+                                    formattedTime,
+                                    isOnline,
+                                    stopwatchState,
+                                    stopwatchNotifier,
+                                    stopwatchState.elapsed,
+                                  );
+                                }
+                              : null,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ],
             ),
-
-            const SizedBox(height: 40),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black26, width: 1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        "Start Time",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        onlineTime == null ? '--:--:--' : onlineTime.toString(),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        "Spend Time",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      displayTimer(),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-                Column(
-                  children: [
-                    actionButton(
-                      label: "Online",
-                      borderColor: isOnline ? Colors.green : Colors.grey,
-                      icon: Icons.wifi,
-                      onPressed: isOnline
-                          ? null
-                          : () {
-                              onlineAlert(
-                                context,
-                                ref,
-                                isOnline,
-                                stopwatchState,
-                                stopwatchNotifier,
-                              );
-                            },
-                    ),
-                    const SizedBox(height: 20),
-                    actionButton(
-                      label: isPaused ? "Resume" : "Pause",
-                      borderColor: Colors.orange,
-                      icon: isPaused ? Icons.play_arrow : Icons.pause,
-                      onPressed: isOnline
-                          ? () {
-                              isPaused
-                                  ? resumeAlert(
-                                      context,
-                                      ref,
-                                      formattedTime,
-                                      isOnline,
-                                      stopwatchState,
-                                      stopwatchNotifier,
-                                    )
-                                  : pausedAlert(
-                                      context,
-                                      ref,
-                                      formattedTime,
-                                      isOnline,
-                                      stopwatchState,
-                                      stopwatchNotifier,
-                                    );
-                            }
-                          : null,
-                    ),
-                    const SizedBox(height: 20),
-                    actionButton(
-                      label: "Offline",
-                      borderColor: isOnline ? Colors.red : Colors.grey,
-                      icon: Icons.power_settings_new,
-                      onPressed: isOnline
-                          ? () {
-                              offlineAlert(
-                                context,
-                                ref,
-                                formattedTime,
-                                isOnline,
-                                stopwatchState,
-                                stopwatchNotifier,
-                                stopwatchState.elapsed,
-                              );
-                            }
-                          : null,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
