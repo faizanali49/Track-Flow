@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackerdesktop/views/login_authentication/login_view.dart';
-import 'package:trackerdesktop/views/widgets/home_screen.dart';
+import 'package:trackerdesktop/views/home_screen.dart';
 import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {

@@ -112,7 +112,7 @@ void pausedAlert(
                             ref,
                           );
                           if (result != 'success') {
-                            logger.e("❌ Failed to pause status.");
+                            logger.e("Failed to pause status.");
                           }
                           print(
                             'stopwatch_spend_time: ' +

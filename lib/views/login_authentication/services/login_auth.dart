@@ -78,19 +78,6 @@ class WindowsAuthService {
       print('employeeEmail: ' + employeeEmail);
       print('companyEmail: ' + companyEmail);
       
-      // if(storedCompanyEmail==companyEmail && storedEmployeeEmail==employeeEmail){
-      //   // restore the state
-      //   await restoreAppState(ref, employeeEmail, companyEmail);
-      //   print(
-      //   'Native employee login successful for ${user.email} under company $companyEmail',
-      // );
-      // } else {
-
-      //   print(
-      //     'No data foundNative employee login successful for ${user.email} under company $companyEmail',
-      //   );
-      // } 
-      
 
       
     } on FirebaseAuthException {
@@ -151,12 +138,9 @@ class WindowsAuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     final prefs = await SharedPreferences.getInstance();
-    // Clear only the specific keys related to this service, or clear all if preferred
-    // Clearing specific keys is generally safer if other parts of the app use shared prefs
     await prefs.remove(_prefsKeyUserId);
     await prefs.remove(_prefsKeyCompanyEmail);
     await prefs.remove(_prefsKeyEmployeeEmail);
     await prefs.remove(_prefsKeyCompanyName);
-    // Or, if this service manages all auth-related prefs: await prefs.clear();
   }
 }

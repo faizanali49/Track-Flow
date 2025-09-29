@@ -16,20 +16,24 @@ final _firestore = FirebaseFirestore.instance;
 // Define a type alias for the Ref used in non-widget logic for clarity.
 typedef ServiceRef = ProviderRef;
 
+// --- 1. App Lifecycle Service (Handles OS-level interactions and Persistence) ---
+
 /// Provider for the AppLifecycleService.
 final appLifecycleServiceProvider = Provider((ref) {
   return AppLifecycleService(ref);
 });
 
 class AppLifecycleService with WindowListener {
+  // Use the type alias for the Ref to ensure strong typing alignment.
   final ServiceRef _ref;
 
   AppLifecycleService(this._ref) {
     windowManager.addListener(this);
   }
 
+  /// Needs to be called once, typically from the HomeScreen's initState.
   void init() {
-    
+    // Listener added in constructor.
   }
 
   void dispose() {
@@ -116,7 +120,6 @@ class AppLifecycleService with WindowListener {
   }
 }
 
-// --- 2. Home Controller (Handles UI interactions and initial setup/restoration) ---
 
 /// Provider for the HomeController.
 final homeControllerProvider = Provider((ref) {
@@ -187,6 +190,7 @@ class HomeController {
               'automatic': true,
             });
       }
+      
       // ---------------------------------------------
 
       logger.i("App state restored and stopwatch auto-started.");

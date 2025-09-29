@@ -34,12 +34,11 @@ Future<String> pausedStatus(
         const SnackBar(content: Text('Status set to Paused')),
       );
     }
-    
+
     return 'success';
   } catch (e) {
-    logger.e("❌ Error in paused dialog: $e");
+    logger.e("Error in paused dialog: $e");
     
-    // Check if context is still valid before using it
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

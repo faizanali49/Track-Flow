@@ -17,8 +17,6 @@ void onlineAlert(
     barrierDismissible: false, // Prevent accidental closing
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
-      // We no longer need to get the userId here as FirestoreService fetches it internally.
-      // final String _userId = ref.watch(userNameProvider);
       final TextEditingController _textFieldController =
           TextEditingController();
       final logger = Logger();
@@ -109,8 +107,6 @@ void onlineAlert(
                             ? null
                             : () async {
                                 try {
-                                  // The userId is now fetched internally by the FirestoreService,
-                                  // so we remove it from the method call.
                                   await _firestoreService.setStatus(
                                     status: 'Online',
                                     comment: _textFieldController.text,
@@ -136,7 +132,7 @@ void onlineAlert(
 
                                   Navigator.of(context).pop();
                                 } catch (e) {
-                                  logger.e("❌ Error in online dialog: $e");
+                                  logger.e(" Error in online dialog: $e");
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Error setting status: $e'),
