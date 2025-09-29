@@ -29,7 +29,7 @@ class FirestoreService {
     return {'employeeEmail': employeeEmail, 'companyId': companyId};
   }
 
-  /// ✅ General-purpose status setter
+  /// General-purpose status setter
   Future<void> setStatus({
     required String status,
     String? comment,
@@ -37,6 +37,7 @@ class FirestoreService {
     String? description,
     int? offlineTime,
     DateTime? timestamp,
+    bool isAutomatic = false, // Add this param for auto-pause
   }) async {
     final authData = await _getAuthData();
     final companyId = authData['companyId'];
@@ -61,7 +62,7 @@ class FirestoreService {
           .doc(_employeeEmail) // log activity under the email
           .collection('activities');
 
-      // Activity history entry
+      // Activity history entry with automatic flag if needed
       final activityData = {
         'timestamp': time,
         'status': status,
@@ -69,6 +70,7 @@ class FirestoreService {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
         if (offlineTime != null) 'spended_time': offlineTime,
+        if (isAutomatic) 'automatic': true,
       };
 
       // Update map for current status
@@ -96,45 +98,6 @@ class FirestoreService {
       logger.i("✅ Status '$status' updated successfully!");
     } catch (e) {
       logger.e("❌ Error updating status '$status': $e");
-    }
-  }
-
-  Future<void> getAllStatusHistoryAndSaveToJson() async {
-    final authData = await _getAuthData();
-    final employeeEmail = _auth.currentUser?.email;
-    final companyId = authData['companyId'];
-
-    if (employeeEmail == null || companyId == null) {
-      logger.e("❌ Cannot fetch status history: Missing auth data.");
-      return;
-    }
-
-    try {
-      final snapshot = await _db
-          .collection('companies')
-          .doc(companyId)
-          .collection('employees')
-          .doc(employeeEmail)
-          .collection('activities')
-          .orderBy('timestamp', descending: true)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        logger.i("ℹ️ No status history found for user: $employeeEmail");
-        return;
-      }
-
-      final historyList = snapshot.docs.map((doc) => doc.data()).toList();
-      final jsonString = jsonEncode(historyList);
-
-      final file = File('status_history_$employeeEmail.json');
-      await file.writeAsString(jsonString);
-
-      logger.i(
-        "✅ Status history exported to status_history_$employeeEmail.json",
-      );
-    } catch (e) {
-      logger.e("❌ Error exporting status history: $e");
     }
   }
 }

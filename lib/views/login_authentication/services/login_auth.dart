@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trackerdesktop/provider/states.dart' as AppStateManager;
+import 'package:trackerdesktop/provider/restore_app_state.dart';
+
+import '../../../services/home_app_state_manager.dart';
 
 class WindowsAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -66,25 +68,31 @@ class WindowsAuthService {
         );
       }
 
-      // 🔑 Store session in SharedPreferences
+      // 🔑 getting session in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefsKeyUserId, user.uid);
-      await prefs.setString(_prefsKeyCompanyEmail, companyEmail.toLowerCase());
-      await prefs.setString(
-        _prefsKeyEmployeeEmail,
-        employeeEmail.toLowerCase(),
-      );
-      await prefs.setString(
-        _prefsKeyCompanyName,
-        companyDoc.data()?['company'] as String? ?? 'Unknown Company',
-      );
+      final storedEmployeeEmail = await prefs.getString('s_employee_email');
+      final storedCompanyEmail = await prefs.getString('s_company_email');
 
-      // 🔥 Restore previous app state (stopwatch, pause, online)
-      await AppStateManager.restoreAppState(ref);
+      print('storedEmployeeEmail: ' + (storedEmployeeEmail ?? 'not saved'));
+      print('storedCompanyEmail: ' + (storedCompanyEmail ?? 'not saved'));
+      print('employeeEmail: ' + employeeEmail);
+      print('companyEmail: ' + companyEmail);
+      
+      // if(storedCompanyEmail==companyEmail && storedEmployeeEmail==employeeEmail){
+      //   // restore the state
+      //   await restoreAppState(ref, employeeEmail, companyEmail);
+      //   print(
+      //   'Native employee login successful for ${user.email} under company $companyEmail',
+      // );
+      // } else {
 
-      print(
-        'Native employee login successful for ${user.email} under company $companyEmail',
-      );
+      //   print(
+      //     'No data foundNative employee login successful for ${user.email} under company $companyEmail',
+      //   );
+      // } 
+      
+
+      
     } on FirebaseAuthException {
       rethrow;
     } catch (e) {

@@ -114,6 +114,10 @@ void pausedAlert(
                           if (result != 'success') {
                             logger.e("❌ Failed to pause status.");
                           }
+                          print(
+                            'stopwatch_spend_time: ' +
+                                stopwatchState.elapsed.toString(),
+                          );
                           context.pop();
                         },
                         style: ElevatedButton.styleFrom(

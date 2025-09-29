@@ -1,52 +1,89 @@
-// lib/views/widgets/right_sidebar.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // Add this for navigation
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackerdesktop/provider/employee_profile_provider.dart';
 import 'package:trackerdesktop/provider/states.dart';
+import 'package:trackerdesktop/provider/theme_check.dart';
+import 'package:trackerdesktop/services/firebase_service.dart';
+import 'package:trackerdesktop/services/home_app_state_manager.dart';
 import 'package:trackerdesktop/theme/colors.dart';
-import 'package:trackerdesktop/views/widgets/offline_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/online_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/paused_dialog_box.dart';
 import 'package:trackerdesktop/views/widgets/resumed_dialog_box.dart';
-import 'package:trackerdesktop/provider/theme_check.dart';
-import 'package:trackerdesktop/views/login_authentication/services/login_auth.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(desktopCurrentTheme);
-    final onlineTime = ref.watch(onlineTimeProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late final HomeController _controller;
+  late final AppLifecycleService _lifecycleService;
+  final _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ref.read(homeControllerProvider);
+    _lifecycleService = ref.read(appLifecycleServiceProvider);
+
+    _lifecycleService.init();
+    _controller.runInitialSetup(context);
+  }
+
+  @override
+  void dispose() {
+    _lifecycleService.dispose();
+    super.dispose();
+  }
+
+  Widget _actionButton({
+    required String label,
+    required Color borderColor,
+    required VoidCallback? onPressed,
+    IconData? icon,
+  }) {
+    return Container(
+      width: 150,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(color: borderColor, width: 2),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon ?? Icons.circle, color: borderColor),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            color: borderColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        style: ButtonStyle(
+          overlayColor: MaterialStateProperty.all(Colors.transparent),
+          backgroundColor: MaterialStateProperty.all(Colors.transparent),
+        ),
+      ),
+    );
+  }
+
+  Widget _displayTimer(BuildContext context, WidgetRef ref) {
     final stopwatchState = ref.watch(stopwatchProvider);
     final stopwatchNotifier = ref.read(stopwatchProvider.notifier);
     final isOnline = ref.watch(onlinestatus);
     final isPaused = ref.watch(pausedstatus);
-    final useremail = ref.watch(employeeEmailProvider);
-    final profile = ref.watch(employeeProfileProvider);
+    final _firestoreService = FirestoreService();
+    final logger = Logger();
 
-    // Check if user is authenticated using WebAuthService
-    WindowsAuthService().isAuthenticated().then((isAuthenticated) {
-      if (!isAuthenticated) {
-        // Redirect to login if not authenticated
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          context.go('/login');
-        });
-      }
-    });
-
-    // Use the stored email for username if available
-    WindowsAuthService().getUserEmail().then((email) {
-      if (email != null && ref.read(employeeEmailProvider) != email) {
-        ref.read(employeeEmailProvider.notifier).state = email;
-      }
-    });
-
-    String formattedTime = DateFormat('h:mm a').format(DateTime.now());
-
-    String formatTime(Duration duration) {
+    String formatDuration(Duration duration) {
       String twoDigits(int n) => n.toString().padLeft(2, '0');
       final hours = twoDigits(duration.inHours);
       final minutes = twoDigits(duration.inMinutes.remainder(60));
@@ -54,64 +91,322 @@ class HomeScreen extends ConsumerWidget {
       return '$hours:$minutes:$seconds';
     }
 
-    // Button builder for consistency
-    Widget actionButton({
-      required String label,
-      required Color borderColor,
-      required VoidCallback? onPressed,
-      IconData? icon,
-    }) {
-      return Container(
-        width: 150,
-        height: 50,
-        decoration: BoxDecoration(
-          border: Border.all(color: borderColor, width: 2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: TextButton.icon(
-          onPressed: onPressed,
-          icon: Icon(icon ?? Icons.circle, color: borderColor),
-          label: Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: borderColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          style: ButtonStyle(
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            backgroundColor: WidgetStateProperty.all(Colors.transparent),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-            ),
-          ),
+    if (!isOnline) {
+      return const Text(
+        '00:00:00',
+        style: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+          letterSpacing: 1.2,
         ),
       );
     }
 
-    // Display time properly based on current state
-    Widget displayTimer() {
-      if (!isOnline) {
-        return Text(
-          '00:00:00',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-            letterSpacing: 1.2,
-          ),
-        );
-      } else {
-        return Text(
-          formatTime(stopwatchState.elapsed),
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: isPaused ? Colors.orange : Colors.green,
-            letterSpacing: 1.2,
-          ),
-        );
+    return GestureDetector(
+      onTap: () {
+        if (isPaused) {
+          // Resume confirmation - using adapted logic from resumed_dialog_box.dart
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              backgroundColor: Colors.white,
+              elevation: 10,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Resume Task',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Are you ready to resume your task?',
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            try {
+                              // Update Riverpod state
+                              stopwatchNotifier.start();
+                              ref.read(pausedstatus.notifier).state = false;
+
+                              // Call Firestore
+                              await _firestoreService.setStatus(
+                                status: 'resumed',
+                                comment: 'Resumed working task',
+                              );
+
+                              // Show success message
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Status set to Resumed'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+
+                              // Close dialog
+                              Navigator.pop(context);
+                            } catch (e) {
+                              logger.e("❌ Error resuming task: $e");
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error resuming task: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: const Text('Resume'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          // Pause confirmation - using adapted logic from paused_dialog_box.dart
+          final reasonController = TextEditingController();
+
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => StatefulBuilder(
+              builder: (context, setState) {
+                final isTextEmpty = reasonController.text.trim().isEmpty;
+
+                reasonController.addListener(() => setState(() {}));
+
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: Colors.white,
+                  elevation: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    width: 400,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pause Task',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Why are you pausing?',
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: reasonController,
+                          maxLines: 2,
+                          maxLength: 30,
+                          decoration: InputDecoration(
+                            labelText: 'e.g., Quick break, meeting, etc.',
+                            labelStyle: const TextStyle(color: Colors.black45),
+                            border: const OutlineInputBorder(),
+                            enabledBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black26),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blueAccent),
+                            ),
+                            suffixIcon: reasonController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 20),
+                                    onPressed: () {
+                                      reasonController.clear();
+                                    },
+                                  )
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: isTextEmpty
+                                  ? null
+                                  : () async {
+                                      try {
+                                        // Update local state
+                                        final bool wasRunning =
+                                            stopwatchState.isRunning;
+                                        stopwatchNotifier.pause();
+                                        ref.read(pausedstatus.notifier).state =
+                                            true;
+
+                                        // Update Firestore
+                                        await _firestoreService.setStatus(
+                                          status: 'paused',
+                                          timestamp: DateTime.now(),
+                                          title: reasonController.text.trim(),
+                                        );
+
+                                        // Save to SharedPreferences
+                                        final prefs =
+                                            await SharedPreferences.getInstance();
+                                        await prefs.setString(
+                                          'pause_reason',
+                                          reasonController.text.trim(),
+                                        );
+                                        await prefs.setBool('is_paused', true);
+                                        await prefs.setString(
+                                          'pause_date',
+                                          DateTime.now().toString(),
+                                        );
+                                        await prefs.setInt(
+                                          'elapsed_time',
+                                          stopwatchState.elapsed.inSeconds,
+                                        );
+
+                                        // Show success message
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Status set to Paused',
+                                              ),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+
+                                        // Close dialog
+                                        Navigator.pop(context);
+                                      } catch (e) {
+                                        logger.e("❌ Error pausing task: $e");
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Error pausing task: $e',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueAccent,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.grey,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: const Text('Pause'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }
+      },
+      child: Text(
+        formatDuration(stopwatchState.elapsed),
+        style: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: isPaused ? Colors.orange : Colors.green,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = ref.watch(desktopCurrentTheme);
+    final onlineTime = ref.watch(onlineTimeProvider);
+    final employeemail = ref.watch(employeeEmailProvider);
+    final profile = ref.watch(employeeProfileProvider);
+    final stopwatchState = ref.watch(stopwatchProvider);
+    final isOnline = ref.watch(onlinestatus);
+    final isPaused = ref.watch(pausedstatus);
+
+    final String formattedTime = DateFormat('h:mm a').format(DateTime.now());
+
+    // Fixed version - no parsing needed since onlineTime is already formatted
+    // String currentTime = DateTime.now().toIso8601String();
+    String displayStartTime = DateFormat('h:mm a').format(DateTime.now());
+
+    if (onlineTime != null && onlineTime.isNotEmpty) {
+      try {
+        final dateTime = DateTime.parse(onlineTime); // parse ISO string
+        displayStartTime = DateFormat('h:mm a').format(dateTime);
+        // Example output: "5:15 PM"
+      } catch (e) {
+        debugPrint('Error parsing onlineTime: $e');
       }
     }
 
@@ -131,7 +426,7 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // Header Row
+                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -162,7 +457,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              useremail ?? 'Guest',
+                              employeemail ?? 'Guest',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDarkMode
@@ -184,15 +479,9 @@ class HomeScreen extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(width: 10),
-                        // Logout button with direct Firebase signout
                         IconButton(
                           icon: const Icon(Icons.logout, color: Colors.red),
-                          onPressed: () async {
-                            await WindowsAuthService().signOut();
-                            if (context.mounted) {
-                              context.go('/login');
-                            }
-                          },
+                          onPressed: () => _controller.signOut(context),
                         ),
                       ],
                     ),
@@ -209,107 +498,115 @@ class HomeScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.black26, width: 1),
                         borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
                       ),
                       child: Column(
                         children: [
-                          Text(
+                          const Text(
                             "Start Time",
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: isDarkMode ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            onlineTime == null
-                                ? '--:--:--'
-                                : onlineTime.toString(),
-                            style: TextStyle(
+                            displayStartTime,
+                            style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: Colors.green,
                               letterSpacing: 1.2,
                             ),
                           ),
+
                           const SizedBox(height: 20),
-                          Text(
+                          const Text(
                             "Spend Time",
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: isDarkMode ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
-                          displayTimer(),
+                          _displayTimer(context, ref),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 20),
+                    const SizedBox(width: 20),
                     Column(
                       children: [
-                        actionButton(
+                        _actionButton(
                           label: "Online",
                           borderColor: isOnline ? Colors.green : Colors.grey,
                           icon: Icons.wifi,
                           onPressed: isOnline
                               ? null
                               : () {
+                                  // Get the stopwatch notifier INSTANCE
+                                  final stopwatchNotifier = ref.read(
+                                    stopwatchProvider.notifier,
+                                  );
+
+                                  // Pass the actual instance to onlineAlert
                                   onlineAlert(
                                     context,
                                     ref,
                                     isOnline,
                                     stopwatchState,
-                                    stopwatchNotifier,
+                                    stopwatchNotifier, // Instance, not type
                                   );
                                 },
                         ),
                         const SizedBox(height: 20),
-                        actionButton(
+                        _actionButton(
                           label: isPaused ? "Resume" : "Pause",
-                          borderColor: Colors.orange,
+                          borderColor: isPaused ? onlinebtn : pausebtn,
                           icon: isPaused ? Icons.play_arrow : Icons.pause,
                           onPressed: isOnline
                               ? () {
-                                  isPaused
-                                      ? resumeAlert(
-                                          context,
-                                          ref,
-                                          formattedTime,
-                                          isOnline,
-                                          stopwatchState,
-                                          stopwatchNotifier,
-                                        )
-                                      : pausedAlert(
-                                          context,
-                                          ref,
-                                          formattedTime,
-                                          isOnline,
-                                          stopwatchState,
-                                          stopwatchNotifier,
-                                        );
+                                  // Get the stopwatch notifier INSTANCE
+                                  final stopwatchNotifier = ref.read(
+                                    stopwatchProvider.notifier,
+                                  );
+
+                                  if (isPaused) {
+                                    resumeAlert(
+                                      context,
+                                      ref,
+                                      DateFormat(
+                                        'h:mm a',
+                                      ).format(DateTime.now()),
+                                      isOnline,
+                                      stopwatchState,
+                                      stopwatchNotifier, // Instance, not type
+                                    );
+                                  } else {
+                                    pausedAlert(
+                                      context,
+                                      ref,
+                                      DateFormat(
+                                        'h:mm a',
+                                      ).format(DateTime.now()),
+                                      isOnline,
+                                      stopwatchState,
+                                      stopwatchNotifier, // Instance, not type
+                                    );
+                                  }
                                 }
                               : null,
                         ),
                         const SizedBox(height: 20),
-                        actionButton(
+                        _actionButton(
                           label: "Offline",
                           borderColor: isOnline ? Colors.red : Colors.grey,
                           icon: Icons.power_settings_new,
                           onPressed: isOnline
-                              ? () {
-                                  offlineAlert(
-                                    context,
-                                    ref,
-                                    formattedTime,
-                                    isOnline,
-                                    stopwatchState,
-                                    stopwatchNotifier,
-                                    stopwatchState.elapsed,
-                                  );
-                                }
+                              ? () => _controller.goOffline(
+                                  context,
+                                  formattedTime,
+                                  stopwatchState.elapsed,
+                                )
                               : null,
                         ),
                       ],
@@ -321,7 +618,7 @@ class HomeScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );
   }

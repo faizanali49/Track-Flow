@@ -6,7 +6,12 @@ class Employee {
   final String avatarUrl;
   final String role;
 
-  Employee({required this.id, required this.name, required this.avatarUrl, required this.role});
+  Employee({
+    required this.id,
+    required this.name,
+    required this.avatarUrl,
+    required this.role,
+  });
 
   factory Employee.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

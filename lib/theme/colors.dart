@@ -12,8 +12,8 @@ const Color onBackground = Color(0xFF000000);
 const Color onSurface = Color(0xFF000000);
 const Color onError = Color(0xFFFFFFFF);
 const Color grey = Colors.grey;
-const Color onlinebtn = Color.fromARGB(255, 1, 216, 47);
-const Color pausebtn = Color.fromARGB(255, 219, 161, 0);
+const Color onlinebtn = Colors.green;
+const Color pausebtn = Colors.orange;
 
 // Dark theme colors
 const Color primaryD = Color.fromARGB(255, 82, 82, 82);

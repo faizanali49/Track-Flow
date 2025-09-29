@@ -6,11 +6,14 @@ import 'package:trackerdesktop/services/firebase_service.dart';
 
 void offlineAlert(
   BuildContext context,
-  WidgetRef ref,
+  // Using generic `ref` but expecting a WidgetRef context inside the dialog
+  // If this function is called from a provider, ensure the provider passes the correct ref type.
+  ref,
   String formattedTime,
   bool isOnline,
-  stopwatchState,
-  stopwatchNotifier,
+  // We use `dynamic` here since the actual type depends on how it's passed from home_controller
+  dynamic stopwatchState,
+  dynamic stopwatchNotifier,
   Duration total_time,
 ) {
   showDialog(
@@ -18,12 +21,11 @@ void offlineAlert(
     barrierDismissible: false, // Prevent accidental close
     builder: (BuildContext context) {
       final FirestoreService _firestoreService = FirestoreService();
-      // We no longer need to get the userId here as FirestoreService fetches it internally.
-      // final _userId = ref.watch(employeeEmailProvider);
       final TextEditingController _titleController = TextEditingController();
       final TextEditingController _descriptionController =
           TextEditingController();
-      String username = ref.watch(employeeEmailProvider)!;
+      // Use ref.watch inside the builder for correct dependency tracking
+      final String username = ref.watch(employeeEmailProvider) ?? 'user';
       final onlineTime = ref.watch(onlineTimeProvider);
 
       return StatefulBuilder(
@@ -145,6 +147,7 @@ void offlineAlert(
                                 if (stopwatchState.isRunning) {
                                   stopwatchNotifier.pause();
                                 }
+
                                 // Stop the time tracking and reset everything
                                 stopwatchNotifier.reset();
                                 ref.read(onlinestatus.notifier).state = false;
@@ -154,8 +157,7 @@ void offlineAlert(
                                   ref.read(pausedstatus.notifier).state = false;
                                 }
 
-                                // The userId is now fetched internally by the FirestoreService,
-                                // so we remove it from the method call.
+                                // Log the activity to Firestore
                                 await _firestoreService.setStatus(
                                   status: 'Offline',
                                   offlineTime: total_time.inMinutes,
@@ -163,27 +165,39 @@ void offlineAlert(
                                   description: _descriptionController.text,
                                 );
 
-                                // Clear the SharedPreferences
+                                // Clear ALL relevant SharedPreferences for a clean offline state
                                 final prefs =
                                     await SharedPreferences.getInstance();
-                                await prefs.remove('pause_reason');
-                                await prefs.remove('is_paused');
+                                await prefs.remove(
+                                  's_employee_email',
+                                ); // ADDED: Clear email/company info
+                                await prefs.remove(
+                                  's_company_email',
+                                ); // ADDED: Clear email/company info
                                 await prefs.remove('elapsed_time');
-                                await prefs.remove('last_time_spent');
-                                await prefs.remove('was_running');
                                 await prefs.remove('was_online');
                                 await prefs.remove('was_paused');
-                                await prefs.remove('pause_date');
+                                await prefs.remove('was_running');
                                 await prefs.remove('start_time');
+                                await prefs.remove(
+                                  'last_closed',
+                                ); // ADDED: Clear last closed timestamp
+
+                                // These were present in the old list, keeping them for compatibility
+                                await prefs.remove('pause_reason');
+                                await prefs.remove('is_paused');
+                                await prefs.remove('last_time_spent');
+                                await prefs.remove('pause_date');
+
+                                // Reset the Riverpod provider state
+                                ref.read(onlineTimeProvider.notifier).state =
+                                    null;
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Status set to Offline'),
                                   ),
                                 );
-                                ref.read(onlineTimeProvider.notifier).state =
-                                    null;
-
                                 Navigator.of(context).pop();
                               },
                         child: const Text(

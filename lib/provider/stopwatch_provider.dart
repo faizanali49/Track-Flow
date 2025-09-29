@@ -1,10 +1,9 @@
+// lib/provider/stopwatch_provider.dart
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:trackerdesktop/provider/employee_profile_provider.dart';
-import 'package:trackerdesktop/services/app_lifecycle_handler.dart';
-import 'package:trackerdesktop/provider/states.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Represents the state of the stopwatch.
+/// State class to hold stopwatch data
 class StopwatchState {
   final Duration elapsed;
   final bool isRunning;
@@ -19,68 +18,75 @@ class StopwatchState {
   }
 }
 
+/// Riverpod StateNotifier to control stopwatch
 class StopwatchNotifier extends StateNotifier<StopwatchState> {
-  final Ref ref;
-  // late AppLifecycleHandler lifecycleHandler;
+  Timer? _timer;
 
-  StopwatchNotifier(this.ref)
+  StopwatchNotifier()
     : super(const StopwatchState(elapsed: Duration.zero, isRunning: false)) {
-    _timer = null;
-
-    // Create and initialize lifecycle handler
-    // lifecycleHandler = AppLifecycleHandler(
-    //   getCurrentTime: () => state.elapsed,
-    //   isRunning: () => state.isRunning,
-    //   isOnline: () => ref.read(onlinestatus),
-    //   isPaused: () => ref.read(pausedstatus),
-    //   companyEmail: ref.read(companyEmailProviderID),
-    // );
-
-    // lifecycleHandler.init();
+    _loadInitialTime(); // Restore on init
+  }
+  void setElapsed(Duration elapsed) {
+    state = state.copyWith(elapsed: elapsed);
   }
 
-  Timer? _timer;
-  DateTime? _lastTick;
-
-  // Starts the stopwatch.
+  // Start stopwatch
   void start() {
     if (state.isRunning) return;
-    state = state.copyWith(isRunning: true);
-    _lastTick = DateTime.now();
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      final now = DateTime.now();
-      final diff = now.difference(_lastTick!);
-      state = state.copyWith(elapsed: state.elapsed + diff);
-      _lastTick = now;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final newElapsed = state.elapsed + const Duration(seconds: 1);
+      state = state.copyWith(elapsed: newElapsed, isRunning: true);
+      _saveState();
     });
+    state = state.copyWith(isRunning: true);
+    _saveState();
   }
 
-  // Pauses the stopwatch.
+  // Pause stopwatch
   void pause() {
     _timer?.cancel();
     state = state.copyWith(isRunning: false);
+    _saveState();
   }
 
-  // Resets the stopwatch.
+  // Reset stopwatch
   void reset() {
     _timer?.cancel();
     state = const StopwatchState(elapsed: Duration.zero, isRunning: false);
+    _saveState();
   }
 
-  // Sets the elapsed time to a specific duration.
-  void setTime(Duration duration) {
-    state = state.copyWith(elapsed: duration);
+  // Manually set elapsed time (when restoring)
+  void setTime(Duration elapsed) {
+    state = state.copyWith(elapsed: elapsed);
+    _saveState();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    // lifecycleHandler.dispose();
-    super.dispose();
+  // Save state to SharedPreferences
+  Future<void> _saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('elapsed_time', state.elapsed.inMilliseconds);
+    await prefs.setBool('was_running', state.isRunning);
+  }
+
+  // Load state from SharedPreferences
+  Future<void> _loadInitialTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final elapsedMs = prefs.getInt('elapsed_time') ?? 0;
+    final wasRunning = prefs.getBool('was_running') ?? false;
+
+    final restoredElapsed = Duration(milliseconds: elapsedMs);
+
+    state = StopwatchState(elapsed: restoredElapsed, isRunning: wasRunning);
+
+    // Auto-resume timer if it was running
+    if (wasRunning) {
+      start();
+    }
   }
 }
 
-final stopwatchProvider =
-    StateNotifierProvider<StopwatchNotifier, StopwatchState>(
-      (ref) => StopwatchNotifier(ref),
-    );
+// final stopwatchProvider =
+//     StateNotifierProvider<StopwatchNotifier, StopwatchState>((ref) {
+//       return StopwatchNotifier();
+//     });
